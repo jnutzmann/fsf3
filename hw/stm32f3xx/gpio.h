@@ -13,7 +13,7 @@ class GpioPin {
     enum class Mode : unsigned {
       kInput      = GPIO_MODE_INPUT,
       kOutput     = GPIO_MODE_OUTPUT_PP,
-      kAlternate  = GPIO_MODE_OUTPUT_PP,
+      kAlternate  = GPIO_MODE_AF_PP,
       kAnalog     = GPIO_MODE_ANALOG
     };
 
@@ -34,19 +34,24 @@ class GpioPin {
       kPullDown   = GPIO_PULLDOWN
     };
 
-    enum class State : bool {
-      kActive
+    enum class State : unsigned {
+      kReset = 0x0,
+      kSet   = 0x1
     };
+
 
     GpioPin(GPIO_TypeDef* port,
             uint16_t pin,
             Mode mode,
             OutputType outputType,
             OutputSpeed outputSpeed,
-            Pull pull);
+            Pull pull,
+            State defaultState);
 
-    void ConfigureOutput(void);
+    void Configure(void);
     void Toggle(void);
+    void Write(State state);
+    State Read(void);
 
 
   protected:
@@ -56,6 +61,7 @@ class GpioPin {
     OutputType _outputType;
     OutputSpeed _outputSpeed;
     Pull _pull;
+    State _defaultState;
 };
 
 } // namespace stm32f3xx
