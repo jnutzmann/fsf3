@@ -5,7 +5,23 @@ using namespace hw::stm32f3xx;
 
 namespace hw {
 
-Tps92518::Tps92518(stm32f3xx::SpiMaster spi, stm32f3xx::GpioPin ss)
+static void PopulateParity(tps92618CmdFrame* cmdFrame) {
+
+  bool parity = 0;
+  cmdFrame->par = 0;
+
+  uint16_t n = *((uint16_t*)cmdFrame);
+
+  while (n) {
+    parity = !parity;
+    n = n & (n-1);
+  }
+
+  cmdFrame->par = !parity;
+}
+
+
+Tps92518::Tps92518(stm32f3xx::SpiMaster* spi, stm32f3xx::GpioPin* ss)
 : _spi(spi),
   _ss(ss) {}
 
@@ -20,9 +36,9 @@ int Tps92518::Read(Register reg, tps92618ReadRsp* resp) {
 
   PopulateParity(&cmd);
 
-  _ss.Write(GpioPin::State::kReset);
-  int result = _spi.TransmitReceive((uint8_t*)&cmd, (uint8_t*)resp, 1, 10);
-  _ss.Write(GpioPin::State::kSet);
+  _ss->Write(GpioPin::State::kReset);
+  int result = _spi->TransmitReceive((uint8_t*)&cmd, (uint8_t*)resp, 1, 10);
+  _ss->Write(GpioPin::State::kSet);
 
   return result;
 }
@@ -37,27 +53,11 @@ int Tps92518::Write(Register reg, uint16_t data, tps92618WriteRsp* resp) {
 
     PopulateParity(&cmd);
 
-    _ss.Write(GpioPin::State::kReset);
-    int result = _spi.TransmitReceive((uint8_t*)&cmd, (uint8_t*)resp, 1, 10);
-    _ss.Write(GpioPin::State::kSet);
+    _ss->Write(GpioPin::State::kReset);
+    int result = _spi->TransmitReceive((uint8_t*)&cmd, (uint8_t*)resp, 1, 10);
+    _ss->Write(GpioPin::State::kSet);
 
     return result;
-}
-
-
-static void PopulateParity(tps92618CmdFrame* cmdFrame) {
-
-  bool parity = 0;
-  cmdFrame->par = 0;
-
-  uint16_t n = *((uint16_t*)cmdFrame);
-
-  while (n) {
-    parity = !parity;
-    n = n & (n-1);
-  }
-
-  cmdFrame->par = !parity;
 }
 
 

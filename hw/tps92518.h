@@ -55,17 +55,15 @@ class Tps92518 {
     RESET             = 0x10
     };
 
-    Tps92518(stm32f3xx::SpiMaster spi, stm32f3xx::GpioPin ss);
+    Tps92518(stm32f3xx::SpiMaster* spi, stm32f3xx::GpioPin* ss);
 
     int Read(Register reg, tps92618ReadRsp* resp);
     int Write(Register reg, uint16_t data, tps92618WriteRsp* resp);
 
   private:
-    stm32f3xx::SpiMaster _spi;
-    stm32f3xx::GpioPin _ss;
+    stm32f3xx::SpiMaster* _spi;
+    stm32f3xx::GpioPin* _ss;
 };
-
-static void PopulateParity(tps92618CmdFrame* cmdFrame);
 
 } // namespace hw
 
