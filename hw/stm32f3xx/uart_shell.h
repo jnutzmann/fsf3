@@ -18,9 +18,17 @@ namespace stm32f3xx {
 class UartShell : public freertos::Thread {
 
   public:
-    UartShell(uint8_t uartIndex, uint32_t baudrate,
-              GPIO_TypeDef* txPort, uint16_t txPin,
-              GPIO_TypeDef* rxPort, uint16_t rxPin);
+
+    struct Config {
+      uint8_t uartIndex;
+      uint32_t baudrate;
+      GPIO_TypeDef* txPort;
+      uint16_t txPin;
+      GPIO_TypeDef* rxPort;
+      uint16_t rxPin;
+    };
+
+    UartShell(const Config & config);
 
     void ServiceInterrupt(void);
 
@@ -30,9 +38,13 @@ class UartShell : public freertos::Thread {
     virtual void Run(void);
 
   private:
+    const Config & _config;
+
     UART_HandleTypeDef _uart;
     freertos::Queue* _rxQueue;
     QueueHandle_t _txQueue;
+
+    void Init(void);
 
     inline bool PutChar(char c);
 
