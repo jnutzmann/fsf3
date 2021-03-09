@@ -26,6 +26,8 @@ class UartShell : public freertos::Thread {
       uint16_t txPin;
       GPIO_TypeDef* rxPort;
       uint16_t rxPin;
+      uint8_t txQueueLength;
+      uint8_t rxQueueLength;
     };
 
     UartShell(const Config & config);
@@ -41,13 +43,13 @@ class UartShell : public freertos::Thread {
     const Config & _config;
 
     UART_HandleTypeDef _uart;
-    freertos::Queue* _rxQueue;
-    QueueHandle_t _txQueue;
 
-    void Init(void);
+    freertos::Queue _txQueue;
+    freertos::Queue _rxQueue;
+
+    void InitHardware(void);
 
     inline bool PutChar(char c);
-
     void StartSend(void);
     bool ContinueSend(void);
 
