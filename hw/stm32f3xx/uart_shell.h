@@ -12,6 +12,9 @@
 #include "freertos/queue.hpp"
 #include "stm32f3_hal/stm32f3xx_hal.h"
 
+#define MAX_CMD_LENGTH 16
+#define CMD_BUFFER_LENGTH (MAX_CMD_LENGTH+1) // Add one for the null character
+
 namespace hw {
 namespace stm32f3xx {
 
@@ -35,6 +38,8 @@ class UartShell : public freertos::Thread {
     void ServiceInterrupt(void);
 
     bool PutString(const char* s);
+    int Write(int file, char *ptr, int len);
+
 
   protected:
     virtual void Run(void);
@@ -45,7 +50,9 @@ class UartShell : public freertos::Thread {
     UART_HandleTypeDef _uart;
 
     freertos::Queue _txQueue;
-    freertos::Queue _rxQueue;
+    freertos::Queue _rxCmdQueue;
+    volatile char _rxBuffer[CMD_BUFFER_LENGTH];
+    volatile uint8_t _rxBufferIndex;
 
     void InitHardware(void);
 

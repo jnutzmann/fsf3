@@ -4,14 +4,19 @@
 #include "freertos/ticks.hpp"
 #include "freertos/src/CMSIS_RTOS_V2/cmsis_os.h"
 
+#include "shell/cli.h"
+
+#include <stdio.h>
+
 namespace hw {
 namespace stm32f3xx {
 
 UartShell::UartShell(const Config & config)
-            : freertos::Thread("dbg", 128*3, osPriorityBelowNormal),
+            : freertos::Thread("shl", 128*2, osPriorityBelowNormal),
               _config(config),
 			  _txQueue(config.txQueueLength, sizeof(char)),
-			  _rxQueue(config.rxQueueLength, sizeof(char)) {
+			  _rxCmdQueue(config.rxQueueLength, CMD_BUFFER_LENGTH),
+			  _rxBufferIndex(0) {
   Start();
 }
 
@@ -69,16 +74,51 @@ void UartShell::InitHardware() {
   _uart.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   _uart.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-  configASSERT(HAL_UART_Init(&_uart) != HAL_OK);
+  configASSERT(HAL_UART_Init(&_uart) == HAL_OK);
+
+  // Enable the receive interrupt
+  SET_BIT(_uart.Instance->CR1, USART_CR1_RXNEIE);
 }
+
+class StatsCommand : public shell::Command {
+  public:
+    StatsCommand() :
+      Command("stats", "display stack usage") {}
+
+    void Callback(char* commandInput) {
+
+
+      int shl = uxTaskGetStackHighWaterMark(NULL);
+      int led = uxTaskGetStackHighWaterMark(xTaskGetHandle("led"));
+      int dft = uxTaskGetStackHighWaterMark(xTaskGetHandle("dft"));
+
+      printf("shl: %i, led: %i, dft: %i\r\n", shl, led, dft);
+    }
+};
+
+static StatsCommand statsCmd;
+
 
 void UartShell::Run() {
 
   InitHardware();
 
+  shell::CommandInterperter interperter;
+  interperter.Register((shell::Command*) &statsCmd);
+
+  printf("\r\r-----\r\nHello!  Welcome to the Sunglasses CLI\r\n> ");
+
+  char cmdBuf[CMD_BUFFER_LENGTH];
+
   while(true) {
-    PutString("Hello World");
-    Delay(2000);
+    _rxCmdQueue.Dequeue(cmdBuf);
+
+    if (cmdBuf[0]) {
+      printf("\r\n\n");
+      interperter.Interpert(cmdBuf);
+    }
+
+    printf("\r\n> ");
   }
 }
 
@@ -96,6 +136,14 @@ bool UartShell::PutString(const char* s) {
   return true;
 }
 
+int UartShell::Write(int file, char *ptr, int len) {
+  for (int i=0; i < len; i++) {
+    if (!_txQueue.Enqueue(ptr+i)) return -1;
+  }
+  StartSend();
+  return len;
+}
+
 void UartShell::StartSend(void) {
   if (!_txQueue.IsEmpty()) {
     SET_BIT(_uart.Instance->CR1, USART_CR1_TXEIE);
@@ -104,24 +152,45 @@ void UartShell::StartSend(void) {
 
 void UartShell::ServiceInterrupt(void) {
   uint32_t isrflags = READ_REG(_uart.Instance->ISR);
-  uint32_t cr1its   = READ_REG(_uart.Instance->CR1);
 
   BaseType_t higherPriorityTaskWoken = pdFALSE;
   char c;
 
-  /* UART in mode Receiver ---------------------------------------------------*/
-  if (((isrflags & USART_ISR_RXNE) != 0U) && ((cr1its & USART_CR1_RXNEIE) != 0U)) {
+  if (isrflags & USART_ISR_RXNE) {
 
     // reading the data register clears the interrupt flag.
     c = (char)_uart.Instance->RDR;
 
-    // TODO: put data back onto transmit
+    if (c == '\r' || _rxBufferIndex >= MAX_CMD_LENGTH) {
+      _rxBuffer[_rxBufferIndex] = 0; // Terminate the string.
 
-    _rxQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);
+      _rxBufferIndex = 0;            // Reset the buffer
+
+      // Enqueue for future processing.
+      _rxCmdQueue.EnqueueFromISR((char*)_rxBuffer, &higherPriorityTaskWoken);
+
+    } else if (c == 127) {
+      if (_rxBufferIndex > 0) {
+        // backspace
+        c = '\b'; _txQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);
+        c = ' ';  _txQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);
+        c = '\b'; _txQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);
+
+        SET_BIT(_uart.Instance->CR1, USART_CR1_TXEIE);
+
+        _rxBufferIndex--;
+      } // else do nothing, as there is nothing to delete
+
+    } else {
+        // Repeat the character back
+        _txQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);
+        SET_BIT(_uart.Instance->CR1, USART_CR1_TXEIE);
+
+        _rxBuffer[_rxBufferIndex++] = c;
+    }
   }
 
-  /* UART in mode Transmitter ------------------------------------------------*/
-  if (((isrflags & USART_ISR_TXE) != 0U) && ((cr1its & USART_CR1_TXEIE) != 0U)) {
+  if (isrflags & USART_ISR_TXE) {
 
     if (_txQueue.DequeueFromISR(&c, &higherPriorityTaskWoken)) {
     _uart.Instance->TDR = c;

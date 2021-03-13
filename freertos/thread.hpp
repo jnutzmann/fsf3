@@ -90,15 +90,9 @@ class Thread {
          *  @param StackDepth Number of "words" allocated for the Thread stack.
          *  @param Priority FreeRTOS priority of this Thread.
          */
-#ifndef CPP_FREERTOS_NO_CPP_STRINGS
         Thread( const std::string Name,
                 uint16_t StackDepth,
                 UBaseType_t Priority);
-#else
-        Thread( const char *Name,
-                uint16_t StackDepth,
-                UBaseType_t Priority);
-#endif
 
         /**
          *  Constructor to create an unnamed thread.

@@ -28,9 +28,13 @@
 #ifndef COMMAND_INTERPRETER_H
 #define COMMAND_INTERPRETER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "freertos/src/FreeRTOS.h"
 
-/* The prototype to which callback functions used to process command line
+/* The prototype to which callback functions used to process command line-=
 commands must comply.  pcWriteBuffer is a buffer into which the output from
 executing the command can be written, xWriteBufferLen is the length, in bytes of
 the pcWriteBuffer buffer, and pcCommandString is the entire string as input by
@@ -91,8 +95,12 @@ char *FreeRTOS_CLIGetOutputBuffer( void );
  */
 const char *FreeRTOS_CLIGetParameter( const char *pcCommandString, UBaseType_t uxWantedParameter, BaseType_t *pxParameterStringLength );
 
-#endif /* COMMAND_INTERPRETER_H */
+#ifdef __cplusplus
+}
+#endif
 
+
+#endif /* COMMAND_INTERPRETER_H */
 
 
 

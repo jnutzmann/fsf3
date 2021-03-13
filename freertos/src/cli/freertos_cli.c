@@ -143,18 +143,18 @@ BaseType_t xReturn = pdFAIL;
 }
 /*-----------------------------------------------------------*/
 
-BaseType_t FreeRTOS_CLIProcessCommand( const char * const pcCommandInput, char * pcWriteBuffer, size_t xWriteBufferLen  )
+BaseType_t FreeRTOS_CLIProcessCommand(const char * pcCommandInput, char * pcWriteBuffer, size_t xWriteBufferLen  )
 {
-static const CLI_Definition_List_Item_t *pxCommand = NULL;
+CLI_Definition_List_Item_t *pxCommand = NULL;
 BaseType_t xReturn = pdTRUE;
-const char *pcRegisteredCommandString;
+char *pcRegisteredCommandString;
 size_t xCommandStringLength;
 
 	/* Note:  This function is not re-entrant.  It must not be called from more
 	thank one task. */
 
-	if( pxCommand == NULL )
-	{
+	//if( pxCommand == NULL )
+//	{
 		/* Search for the command string in the list of registered commands. */
 		for( pxCommand = &xRegisteredCommands; pxCommand != NULL; pxCommand = pxCommand->pxNext )
 		{
@@ -185,7 +185,7 @@ size_t xCommandStringLength;
 				}
 			}
 		}
-	}
+	//}
 
 	if( ( pxCommand != NULL ) && ( xReturn == pdFALSE ) )
 	{
@@ -199,13 +199,13 @@ size_t xCommandStringLength;
 		/* Call the callback function that is registered to this command. */
 		xReturn = pxCommand->pxCommandLineDefinition->pxCommandInterpreter( pcWriteBuffer, xWriteBufferLen, pcCommandInput );
 
-		/* If xReturn is pdFALSE, then no further strings will be returned
-		after this one, and	pxCommand can be reset to NULL ready to search
-		for the next entered command. */
-		if( xReturn == pdFALSE )
-		{
-			pxCommand = NULL;
-		}
+//		/* If xReturn is pdFALSE, then no further strings will be returned
+//		after this one, and	pxCommand can be reset to NULL ready to search
+//		for the next entered command. */
+//		if( xReturn == pdFALSE )
+//		{
+//			pxCommand = NULL;
+//		}
 	}
 	else
 	{
