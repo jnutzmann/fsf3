@@ -12,7 +12,7 @@ namespace hw {
 namespace stm32f3xx {
 
 UartShell::UartShell(const Config & config)
-            : freertos::Thread("shl", 128*2, osPriorityBelowNormal),
+            : freertos::Thread("SHELL", 128*3, osPriorityBelowNormal),
               _config(config),
 			  _txQueue(config.txQueueLength, sizeof(char)),
 			  _rxCmdQueue(config.rxQueueLength, CMD_BUFFER_LENGTH),
@@ -86,16 +86,11 @@ class StatsCommand : public shell::Command {
       Command("stats", "display stack usage") {}
 
     void Callback(char* commandInput) {
-
-
-      int shl = uxTaskGetStackHighWaterMark(NULL);
-      int led = uxTaskGetStackHighWaterMark(xTaskGetHandle("led"));
-      int dft = uxTaskGetStackHighWaterMark(xTaskGetHandle("dft"));
-
-      printf("shl: %i, led: %i, dft: %i\r\n", shl, led, dft);
+      char outputBuff[160];
+      vTaskList(outputBuff);
+      printf("%s\r\n", outputBuff);
     }
 };
-
 static StatsCommand statsCmd;
 
 
@@ -103,10 +98,9 @@ void UartShell::Run() {
 
   InitHardware();
 
-  shell::CommandInterperter interperter;
-  interperter.Register((shell::Command*) &statsCmd);
+  shell::commandInterperterInstance.Register((shell::Command*) &statsCmd);
 
-  printf("\r\r-----\r\nHello!  Welcome to the Sunglasses CLI\r\n> ");
+  printf("\r\r-----\r\nHello!  Welcome to the Sunglasses CLI!\r\n> ");
 
   char cmdBuf[CMD_BUFFER_LENGTH];
 
@@ -115,7 +109,7 @@ void UartShell::Run() {
 
     if (cmdBuf[0]) {
       printf("\r\n\n");
-      interperter.Interpert(cmdBuf);
+      shell::commandInterperterInstance.Interpert(cmdBuf);
     }
 
     printf("\r\n> ");
@@ -180,7 +174,6 @@ void UartShell::ServiceInterrupt(void) {
 
         _rxBufferIndex--;
       } // else do nothing, as there is nothing to delete
-
     } else {
         // Repeat the character back
         _txQueue.EnqueueFromISR(&c, &higherPriorityTaskWoken);

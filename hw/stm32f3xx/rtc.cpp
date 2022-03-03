@@ -8,6 +8,8 @@
 
 #include "rtc.h"
 
+#include "stdio.h"
+
 namespace hw {
 namespace stm32f3xx {
 
@@ -36,15 +38,15 @@ int Rtc::SetTime(uint8_t hours, uint8_t minutes, uint8_t seconds) {
   return HAL_RTC_SetTime(&_rtc, &time, RTC_FORMAT_BIN);
 }
 
-int Rtc::GetTime(uint8_t* hours, uint8_t* minutes, uint8_t* seconds) {
+int Rtc::GetTime(uint8_t& hours, uint8_t& minutes, uint8_t& seconds) {
 
   RTC_TimeTypeDef time;
 
   int result = HAL_RTC_GetTime(&_rtc, &time, RTC_FORMAT_BIN);
 
-  *hours = time.Hours;
-  *minutes = time.Minutes;
-  *seconds = time.Seconds;
+  hours = time.Hours;
+  minutes = time.Minutes;
+  seconds = time.Seconds;
 
   return result;
 }
@@ -60,15 +62,15 @@ int Rtc::SetDate(uint8_t month, uint8_t day, uint8_t year, uint8_t weekday) {
   return HAL_RTC_SetDate(&_rtc, &date, RTC_FORMAT_BIN);
 }
 
-int Rtc::GetDate(uint8_t* month, uint8_t* day, uint8_t* year, uint8_t* weekday) {
+int Rtc::GetDate(uint8_t& month, uint8_t& day, uint8_t& year, uint8_t& weekday) {
   RTC_DateTypeDef date;
 
   int result = HAL_RTC_GetDate(&_rtc, &date, RTC_FORMAT_BIN);
 
-  *month = date.Month;
-  *day = date.Date;
-  *year = date.Year;
-  *weekday = date.WeekDay;
+  month = date.Month;
+  day = date.Date;
+  year = date.Year;
+  weekday = date.WeekDay;
 
   return result;
 }
@@ -81,6 +83,45 @@ uint32_t Rtc::GetBackupRegister(uint8_t index) {
   return HAL_RTCEx_BKUPRead(&_rtc, index);
 }
 
+
+RtcGetCommand::RtcGetCommand(Rtc &rtc)
+  : Command("rtc_get", "Gets current time"), _rtc(rtc) {}
+
+void RtcGetCommand::Callback(char* commandInput) {
+  uint8_t hours, minutes, seconds, month, day, year, weekday;
+
+  _rtc.GetTime(hours, minutes, seconds);
+  _rtc.GetDate(month, day, year, weekday);
+
+  printf("%i/%i/%i %i:%i:%i", month, day, year, hours, minutes, seconds);
+}
+
+RtcSetCommand::RtcSetCommand(Rtc &rtc)
+  : Command("rtc_set", "Sets current time"), _rtc(rtc) {}
+
+void RtcSetCommand::Callback(char* commandInput) {
+  int hours, minutes, seconds, month, day, year;
+
+  // target format: mm/dd/yy hh:mm:ss
+
+  char* datetime = commandInput + 8;
+
+  int rtn = sscanf(datetime, "%i/%i/%i %i:%i:%i", &month, &day, &year,
+                                                  &hours, &minutes, &seconds);
+
+  if (rtn != 6
+      || month   < 1 || month   > 12
+      || day     < 1 || day     > 31
+      || year    < 0 || year    > 99
+      || hours   < 0 || hours   > 23
+      || seconds < 0 || seconds > 59) {
+    printf("Please enter date/time in format mm/dd/yy hh:mm:ss");
+    return;
+  }
+
+  _rtc.SetTime(hours, minutes, seconds);
+  _rtc.SetDate(month, day, year, 0);
+}
 
 
 

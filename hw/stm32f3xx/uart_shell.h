@@ -12,7 +12,7 @@
 #include "freertos/queue.hpp"
 #include "stm32f3_hal/stm32f3xx_hal.h"
 
-#define MAX_CMD_LENGTH 16
+#define MAX_CMD_LENGTH 32
 #define CMD_BUFFER_LENGTH (MAX_CMD_LENGTH+1) // Add one for the null character
 
 namespace hw {

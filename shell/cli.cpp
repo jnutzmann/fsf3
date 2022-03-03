@@ -29,7 +29,7 @@ class HelpCommand : public Command {
     CommandListEntry* _commandListHead;
 };
 
-static HelpCommand helpCommand;
+static HelpCommand helpCommand __attribute__((section(".ccmram")));
 
 Command::Command(const char* command, const char* helpString) :
     command(command),
@@ -81,7 +81,7 @@ void CommandInterperter::Interpert(char* commandInput) {
 }
 
 
-//CommandInterperter commandInterperterInstance((Command*) &helpCommand);
+CommandInterperter commandInterperterInstance __attribute__((section(".ccmram")));
 
 
 } // namespace shell

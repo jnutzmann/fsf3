@@ -1843,8 +1843,8 @@ extern void vApplicationGetIdleTaskMemory  (StaticTask_t **ppxIdleTaskTCBBuffer,
 //extern void vApplicationGetTimerTaskMemory (StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize);
 
 /* Idle task control block and stack */
-static StaticTask_t Idle_TCB;
-static StackType_t  Idle_Stack[configMINIMAL_STACK_SIZE];
+static StaticTask_t Idle_TCB __attribute__((section(".ccmram")));
+static StackType_t  Idle_Stack[configMINIMAL_STACK_SIZE] __attribute__((section(".ccmram")));
 
 /* Timer task control block and stack */
 //static StaticTask_t Timer_TCB;

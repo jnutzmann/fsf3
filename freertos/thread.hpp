@@ -245,17 +245,11 @@ class Thread {
          *
          *  @return a C++ string with the name of the task.
          */
-#ifndef CPP_FREERTOS_NO_CPP_STRINGS
         inline std::string GetName()
         {
             return Name;
         }
-#else
-        inline char* GetName()
-        {
-            return pcTaskGetName(handle);
-        }
-#endif
+
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -374,11 +368,7 @@ class Thread {
         /**
          *  The name of this thread.
          */
-#ifndef CPP_FREERTOS_NO_CPP_STRINGS
         const std::string Name;
-#else
-        char Name[configMAX_TASK_NAME_LEN];
-#endif
 
         /**
          *  Stack depth of this Thread, in words.
